@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Phân Tích Mã</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: bàn phân tích độc lập, chính xác như bảng giá in trên báo tài chính
+   IDEA: một bảng xếp hạng được kẻ dòng cẩn thận — mỗi mã đứng cạnh các mã cùng ngành
+   PICTURE: bảng lọc cổ phiếu là hình chính; trang chi tiết có thanh điểm 4 trụ cột
+   COLOUR/TYPE: nền đá #e7e4df, mực đen, đỏ gạch #c8371e, bảng trắng; Schibsted Grotesk
+   LAYOUT: bộ lọc trên, bảng dưới; chi tiết mã: điểm + so sánh ngành + cờ đỏ + AI */
+:root{color-scheme:light dark;--bg:light-dark(#e7e4df,#171513);--ink:light-dark(#141210,#eeeae4);--panel:light-dark(#fff,#221f1c);--mut:light-dark(#5d5750,#ada69d);--line:light-dark(#d6d1ca,#3a3531);--acc:#c8371e;--accs:light-dark(#f6dcd5,#4a2018);--up:light-dark(#1d6b45,#6fcf9b);--soft:light-dark(#f1eeea,#2b2723)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Schibsted Grotesk",system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{line-height:1.08;margin:0 0 .4em;text-wrap:balance}h1{font-size:clamp(28px,4vw,44px);font-weight:700}h2{font-size:22px}h3{font-size:17px;font-weight:500}
+a{color:inherit}
+header{border-bottom:3px solid var(--ink);padding:14px max(5vw,16px);display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.logo{font-weight:700;font-size:22px;text-decoration:none}.logo i{font-style:normal;color:var(--acc)}
+nav{display:flex;gap:4px;flex-wrap:wrap}nav a{text-decoration:none;padding:9px 12px;border-radius:8px;font-weight:500}nav a.on{background:var(--ink);color:var(--bg)}
+.band{padding:clamp(20px,3vw,40px) max(5vw,16px);max-width:1400px;margin:0 auto}
+.note{background:var(--accs);padding:9px max(5vw,16px);font-size:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.mut{color:var(--mut);font-size:14px}
+label{display:block;font-size:14px;font-weight:500;margin:8px 0 4px}
+input,select,textarea{font:16px "Schibsted Grotesk",sans-serif;width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);min-height:44px}
+textarea{min-height:140px;font-family:ui-monospace,Consolas,monospace;font-size:14px}
+:focus-visible{outline:3px solid var(--acc);outline-offset:1px}
+button{font:600 15px "Schibsted Grotesk",sans-serif;min-height:44px;padding:8px 16px;border-radius:8px;border:1px solid var(--ink);background:var(--panel);color:var(--ink);cursor:pointer}
+button.pri{background:var(--ink);color:var(--bg)}button.acc{background:var(--acc);border-color:var(--acc);color:#fff}button.sm{min-height:34px;padding:3px 10px;font-size:14px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.row>*{flex:1 1 150px}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+.presets button{border-radius:99px;font-weight:500}.presets button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+thead th{border-bottom:2px solid var(--ink);font-size:13px;color:var(--mut);cursor:pointer;user-select:none;position:sticky;top:0;background:var(--panel)}
+th.n,td.n{text-align:right}tbody tr{cursor:pointer}tbody tr:hover{background:var(--soft)}
+td.tk{font-weight:700}
+.sc{display:inline-flex;align-items:center;gap:6px}.sc i{display:inline-block;height:8px;border-radius:99px;background:var(--ink);width:var(--w)}
+.sc.top i{background:var(--up)}.sc.low i{background:var(--acc)}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--soft);white-space:nowrap}.tag.r{background:var(--acc);color:#fff}.tag.g{background:var(--up);color:light-dark(#fff,#111)}
+.big{font-weight:700;font-size:clamp(36px,5vw,60px);line-height:1}
+.pill{display:grid;grid-template-columns:120px minmax(0,1fr) 46px;gap:10px;align-items:center;margin:9px 0}
+.meter{height:12px;background:var(--soft);border-radius:99px;overflow:hidden}.meter i{display:block;height:100%;background:var(--ink)}
+.meter.g i{background:var(--up)}.meter.r i{background:var(--acc)}
+.flag{padding:9px 12px;border-radius:8px;margin:6px 0;font-size:15px;background:var(--soft);border-left:4px solid var(--up)}.flag.bad{background:var(--accs);border-left-color:var(--acc)}
+.ai{white-space:pre-wrap;background:var(--soft);border-radius:8px;padding:12px;min-height:60px;margin-top:10px;font-size:15px}
+.sec{display:none}.sec.on{display:block}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin:16px 0}
+.stat div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}.stat b{display:block;font-size:24px}.stat span{font-size:13px;color:var(--mut)}
+footer{padding:20px max(5vw,16px);font-size:13px;color:var(--mut);max-width:1400px;margin:0 auto}
+@media(max-width:600px){table{font-size:13px}.pill{grid-template-columns:96px minmax(0,1fr) 40px}}
+</style>
+</head>
+<body>
+<header><a class="logo" href="#loc">Phân Tích <i>Mã</i></a><nav id="nav"><a href="#loc">Bộ lọc</a><a href="#nganh">Ngành</a><a href="#theo-doi">Theo dõi</a><a href="#nap">Nạp dữ liệu</a><a href="#cach-tinh">Cách tính điểm</a></nav></header>
+<div class="note" id="srcNote"></div>
+<main id="app"></main>
+<footer>Công cụ hỗ trợ phân tích, không phải khuyến nghị mua bán. Điểm số chỉ so sánh tương đối giữa các mã trong dữ liệu đã nạp; hãy kiểm chứng số liệu với báo cáo tài chính gốc.</footer>
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const N=v=>{if(v===null||v===undefined)return NaN;if(typeof v==='number')return v;let s=String(v).trim().replace(/%$/,'');if(s===''||s==='-'||s==='—')return NaN;if(/^-?[\d.]+,\d+$/.test(s))s=s.replace(/\./g,'').replace(',','.');else s=s.replace(/,/g,'');return Number(s)};
+const fmt=(n,d=1)=>isFinite(n)?Number(n).toLocaleString('vi-VN',{maximumFractionDigits:d,minimumFractionDigits:d}):'—';
+const med=a=>{a=a.filter(isFinite).sort((x,y)=>x-y);if(!a.length)return NaN;const m=a.length>>1;return a.length%2?a[m]:(a[m-1]+a[m])/2};
+
+/* Cột dữ liệu: khóa, nhãn, đơn vị, các tên tiêu đề được chấp nhận khi nạp */
+const COLS=[
+['ticker','Mã','',['ticker','ma','mã','symbol','ma ck','mã ck']],
+['name','Tên','',['name','ten','tên','company','organ_name','ten cong ty','tên công ty']],
+['exchange','Sàn','',['exchange','san','sàn','floor']],
+['sector','Ngành','',['sector','nganh','ngành','industry','icb_name2','icb_name3']],
+['price','Giá','nghìn đ',['price','gia','giá','close','gia dong cua','giá đóng cửa']],
+['mcap','Vốn hóa','tỷ đ',['mcap','von hoa','vốn hóa','market_cap','marketcap']],
+['pe','P/E','lần',['pe','p/e']],['pb','P/B','lần',['pb','p/b']],
+['roe','ROE','%',['roe','roe (%)']],['roa','ROA','%',['roa','roa (%)']],
+['rev_g','Tăng DT','%',['rev_g','revenue_growth','tang truong doanh thu','tăng trưởng doanh thu']],
+['np_g','Tăng LN','%',['np_g','profit_growth','tang truong loi nhuan','tăng trưởng lợi nhuận']],
+['gross_m','Biên gộp','%',['gross_m','gross_margin','bien loi nhuan gop','biên lợi nhuận gộp']],
+['net_m','Biên ròng','%',['net_m','net_margin','bien loi nhuan rong','biên lợi nhuận ròng']],
+['de','Nợ/VCSH','lần',['de','debt_equity','no/vcsh','nợ/vcsh','debt/equity']],
+['cfo_np','DòngTiền/LN','lần',['cfo_np','cfo/np','dong tien/loi nhuan']],
+['div_y','Cổ tức','%',['div_y','dividend_yield','ty suat co tuc','tỷ suất cổ tức']],
+['chg_1m','Giá 1 tháng','%',['chg_1m','change_1m','bien dong 1 thang']],
+['chg_1y','Giá 1 năm','%',['chg_1y','change_1y','bien dong 1 nam']],
+['vol_ratio','KL/TB20','lần',['vol_ratio','volume_ratio']],
+['foreign','Sở hữu NN','%',['foreign','foreign_own','so huu nuoc ngoai','sở hữu nn']]];
+const TXT=['ticker','name','exchange','sector'];
+const LAB=Object.fromEntries(COLS.map(c=>[c[0],c[1]]));const UNIT=Object.fromEntries(COLS.map(c=>[c[0],c[2]]));
+const BANKISH=s=>/ngân hàng|ngan hang|bank|bảo hiểm|chứng khoán|tài chính/i.test(s||'');
+
+/* Dữ liệu mẫu minh họa — mã và số liệu giả định */
+function demoRows(){let seed=7;const r=()=>(seed=(seed*16807)%2147483647)/2147483647;const secs=[['Ngân hàng',8,1.3,17,0.2],['Bất động sản',14,1.4,9,1.1],['Thép',11,1.1,10,0.9],['Bán lẻ',18,3,18,0.6],['Chứng khoán',13,1.6,12,1.4],['Điện',12,1.5,13,0.8],['Thực phẩm',16,2.6,20,0.5],['Công nghệ',19,4.5,24,0.4]];const out=[];let k=0;secs.forEach(([s,pe,pb,roe,de],si)=>{for(let i=0;i<4;i++){k++;const t='D'+String.fromCharCode(65+si)+String.fromCharCode(65+i)+'';const g=(r()-.35)*50;const row={ticker:t,name:`Công ty mẫu ${s} ${i+1}`,exchange:['HOSE','HNX','UPCOM'][Math.floor(r()*3)],sector:s,price:+(8+r()*90).toFixed(1),mcap:Math.round(800+r()*90000),pe:+(pe*(0.5+r()*1.1)).toFixed(1),pb:+(pb*(0.5+r()*1.1)).toFixed(2),roe:+(roe*(0.4+r()*1.2)).toFixed(1),roa:+(roe*(0.4+r()*1.2)/(s==='Ngân hàng'?9:2.2)).toFixed(1),rev_g:+(g*0.8+(r()-.5)*15).toFixed(1),np_g:+(g+(r()-.5)*40).toFixed(1),gross_m:s==='Ngân hàng'?NaN:+(10+r()*35).toFixed(1),net_m:+(3+r()*20).toFixed(1),de:s==='Ngân hàng'?NaN:+(de*(0.3+r()*1.8)).toFixed(2),cfo_np:+(-0.4+r()*2).toFixed(2),div_y:+(r()*7).toFixed(1),chg_1m:+((r()-.45)*30).toFixed(1),chg_1y:+((r()-.4)*70).toFixed(1),vol_ratio:+(0.4+r()*r()*5).toFixed(2),foreign:+(r()*45).toFixed(1)};if(k===6){row.pe=-12;row.np_g=-140}if(k===14){row.vol_ratio=4.3;row.chg_1m=34}if(k===22){row.chg_1m=-21;row.vol_ratio=0.5}out.push(row)}});return out}
+
+let S={rows:demoRows(),demo:true,source:'Dữ liệu mẫu minh họa',at:null,stars:[],notes:{}};
+let DB=null,uidv=null,ai=null,saveT=null;
+let F={q:'',ex:'',sec:'',preset:'all',sort:'total',dir:-1,limit:100};
+
+/* ---------- chấm điểm theo phân vị trong ngành ---------- */
+let SC={},SECM={};
+function rank(arr,v){const a=arr.filter(isFinite);if(!isFinite(v)||a.length<2)return NaN;let lo=0,eq=0;a.forEach(x=>{if(x<v)lo++;else if(x===v)eq++});return(lo+eq/2)/a.length}
+function avg(a){a=a.filter(isFinite);return a.length?a.reduce((x,y)=>x+y,0)/a.length:NaN}
+function compute(){SC={};SECM={};const bySec={};S.rows.forEach(r=>{(bySec[r.sector||'Khác']=bySec[r.sector||'Khác']||[]).push(r)});const keys=COLS.map(c=>c[0]).filter(k=>!TXT.includes(k));
+  for(const s in bySec){SECM[s]={n:bySec[s].length};keys.forEach(k=>SECM[s][k]=med(bySec[s].map(r=>N(r[k]))))}
+  const all={};keys.forEach(k=>all[k]=S.rows.map(r=>N(r[k])));
+  S.rows.forEach(r=>{const grp=bySec[r.sector||'Khác'];const pool=k=>grp.length>=4?grp.map(x=>N(x[k])):all[k];const pr=(k,inv)=>{let v=N(r[k]);if(k==='pe'&&!(v>0))return NaN;let p=k==='pe'?rank(pool(k).filter(x=>x>0),v):rank(pool(k),v);return inv?1-p:p};
+    const value=avg([pr('pe',1),pr('pb',1),pr('div_y')]);const quality=avg([pr('roe'),pr('roa'),pr('cfo_np'),BANKISH(r.sector)?NaN:pr('de',1),pr('net_m')]);const growth=avg([pr('rev_g'),pr('np_g')]);const heat=avg([pr('vol_ratio'),pr('chg_1m')]);
+    let total=avg([value,value,quality,quality,growth].filter(isFinite));if(N(r.pe)<0)total=total*0.7;
+    SC[r.ticker]={value,quality,growth,heat,total,flags:flags(r)}})}
+function flags(r){const f=[],bank=BANKISH(r.sector);const pe=N(r.pe),np=N(r.np_g),rv=N(r.rev_g),cf=N(r.cfo_np),de=N(r.de),roe=N(r.roe),vr=N(r.vol_ratio),c1=N(r.chg_1m);
+  if(pe<0)f.push(['bad','Đang lỗ (P/E âm)']);if(np<-30)f.push(['bad',`Lợi nhuận giảm ${fmt(-np,0)}%`]);if(!bank&&isFinite(cf)&&cf<0.5)f.push(['bad',cf<0?'Dòng tiền kinh doanh âm trong khi báo lãi':`Dòng tiền chỉ bằng ${fmt(cf*100,0)}% lợi nhuận`]);if(!bank&&de>2.5)f.push(['bad',`Đòn bẩy cao: nợ/vốn chủ ${fmt(de,2)} lần`]);if(isFinite(np)&&isFinite(rv)&&np>rv+40&&rv<5)f.push(['bad','Lợi nhuận tăng mạnh nhưng doanh thu không tăng — kiểm tra lợi nhuận bất thường']);if(isFinite(roe)&&roe<5)f.push(['bad',`ROE thấp (${fmt(roe)}%)`]);if(vr>3&&c1>25)f.push(['bad','Đám đông đang đẩy nóng: khối lượng gấp '+fmt(vr)+' lần, giá +'+fmt(c1,0)+'% trong 1 tháng']);return f}
+
+/* ---------- bộ lọc chiến lược ---------- */
+const PRESETS={all:['Tất cả',()=>true],value:['Giá trị',(r,s)=>s.value>=.65&&N(r.pe)>0&&s.flags.length===0],quality:['Chất lượng',(r,s)=>s.quality>=.7],garp:['Tăng trưởng giá hợp lý',(r,s)=>s.growth>=.6&&s.value>=.45&&N(r.pe)>0],div:['Cổ tức',(r,s)=>N(r.div_y)>=5&&N(r.cfo_np)>=0.8],ignored:['Bị bỏ quên',(r,s)=>N(r.chg_1m)<=-12&&s.heat<=.4&&s.quality>=.5],hot:['Đang nóng',(r,s)=>s.heat>=.8],red:['Có cờ đỏ',(r,s)=>s.flags.length>0]};
+
+/* ---------- lưu trữ ---------- */
+const CH=400;
+async function save(){const meta={source:S.source,at:S.at,demo:S.demo,stars:S.stars,notes:S.notes,chunks:Math.ceil(S.rows.length/CH)};try{if(DB&&uidv){const col=DB.collection('data/users/'+uidv);await col.doc('meta').set({json:JSON.stringify(meta)});if(S._rowsDirty){for(let i=0;i<meta.chunks;i++)await col.doc('c'+i).set({json:JSON.stringify(S.rows.slice(i*CH,(i+1)*CH))});S._rowsDirty=false}}else{localStorage.setItem('ptm',JSON.stringify({...meta,rows:S.rows}))}}catch(e){try{localStorage.setItem('ptm',JSON.stringify({...meta,rows:S.rows}))}catch(_){}}}
+function touch(rows){if(rows)S._rowsDirty=true;clearTimeout(saveT);saveT=setTimeout(save,600)}
+const dget=async d=>{const r=await d.get();return r&&typeof r.data==='function'?r.data():r};
+
+/* ---------- màn hình ---------- */
+const sc=(v,ht)=>isFinite(v)?`<span class="sc ${ht?(v>=.8?'low':''):(v>=.7?'top':v<.35?'low':'')}" style="--w:${Math.round(v*44)}px"><i></i>${Math.round(v*100)}</span>`:'—';
+const V={};
+V.loc=()=>{const secs=[...new Set(S.rows.map(r=>r.sector||'Khác'))].sort();const exs=[...new Set(S.rows.map(r=>r.exchange).filter(Boolean))].sort();return`<section class="band"><h1>${esc(headline())}</h1><p class="mut">${S.rows.length.toLocaleString('vi-VN')} mã · điểm 0–100 so với các mã cùng ngành. Bấm vào một dòng để xem phân tích chi tiết.</p>
+<div class="row"><div style="flex:2 1 220px"><label for="q">Tìm mã hoặc tên</label><input id="q" value="${esc(F.q)}" placeholder="VD: FPT, ngân hàng…"></div><div><label for="ex">Sàn</label><select id="ex"><option value="">Tất cả</option>${exs.map(e=>`<option ${F.ex===e?'selected':''}>${esc(e)}</option>`).join('')}</select></div><div><label for="sec">Ngành</label><select id="sec"><option value="">Tất cả</option>${secs.map(e=>`<option ${F.sec===e?'selected':''}>${esc(e)}</option>`).join('')}</select></div></div>
+<div class="presets">${Object.entries(PRESETS).map(([k,[n]])=>`<button class="${F.preset===k?'on':''}" data-p="${k}">${n}</button>`).join('')}</div>
+<div class="card scroll" style="padding:0"><table id="tbl"></table></div><p id="more"></p></section>`};
+function filtered(){const q=F.q.trim().toLowerCase();return S.rows.filter(r=>{const s=SC[r.ticker];return(!q||r.ticker.toLowerCase().includes(q)||String(r.name).toLowerCase().includes(q)||String(r.sector).toLowerCase().includes(q))&&(!F.ex||r.exchange===F.ex)&&(!F.sec||(r.sector||'Khác')===F.sec)&&PRESETS[F.preset][1](r,s)})}
+function sortVal(r,k){const s=SC[r.ticker];if(['total','value','quality','growth','heat'].includes(k))return s[k];if(k==='flags')return s.flags.length;return TXT.includes(k)?String(r[k]||''):N(r[k])}
+function drawTable(){const rows=filtered().sort((a,b)=>{const x=sortVal(a,F.sort),y=sortVal(b,F.sort);if(typeof x==='string')return x.localeCompare(y)*F.dir;const fx=isFinite(x),fy=isFinite(y);if(!fx&&!fy)return 0;if(!fx)return 1;if(!fy)return -1;return(x-y)*F.dir});const cols=[['ticker','Mã'],['sector','Ngành'],['price','Giá'],['total','Tổng'],['value','Giá trị'],['quality','Chất lượng'],['growth','Tăng trưởng'],['heat','Độ nóng'],['pe','P/E'],['pb','P/B'],['roe','ROE %'],['np_g','Tăng LN %'],['flags','Cờ đỏ']];const ar=k=>F.sort===k?(F.dir<0?' ▼':' ▲'):'';
+  $('#tbl').innerHTML=`<thead><tr>${cols.map(([k,n],i)=>`<th class="${i>1?'n':''}" data-s="${k}" aria-sort="${F.sort===k?(F.dir<0?'descending':'ascending'):'none'}">${n}${ar(k)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,F.limit).map(r=>{const s=SC[r.ticker];return`<tr data-t="${esc(r.ticker)}" tabindex="0"><td class="tk">${S.stars.includes(r.ticker)?'★ ':''}${esc(r.ticker)}</td><td>${esc(r.sector)}</td><td class="n">${fmt(N(r.price))}</td><td class="n"><b>${isFinite(s.total)?Math.round(s.total*100):'—'}</b></td><td class="n">${sc(s.value)}</td><td class="n">${sc(s.quality)}</td><td class="n">${sc(s.growth)}</td><td class="n">${sc(s.heat,1)}</td><td class="n">${fmt(N(r.pe))}</td><td class="n">${fmt(N(r.pb),2)}</td><td class="n">${fmt(N(r.roe))}</td><td class="n">${fmt(N(r.np_g),0)}</td><td class="n">${s.flags.length?`<span class="tag r">${s.flags.length}</span>`:''}</td></tr>`}).join('')||'<tr><td colspan="13">Không có mã nào khớp bộ lọc.</td></tr>'}</tbody>`;
+  $('#more').innerHTML=rows.length>F.limit?`<button id="moreB">Hiện thêm (${rows.length-F.limit} mã)</button>`:`<span class="mut">${rows.length} mã</span>`;
+  $('#tbl').querySelectorAll('th').forEach(th=>th.onclick=()=>{const k=th.dataset.s;F.dir=F.sort===k?-F.dir:(TXT.includes(k)?1:-1);F.sort=k;drawTable()});
+  $('#tbl').querySelectorAll('tbody tr[data-t]').forEach(tr=>{const go=()=>location.hash='ma-'+tr.dataset.t;tr.onclick=go;tr.onkeydown=e=>{if(e.key==='Enter')go()}});
+  const mb=$('#moreB');if(mb)mb.onclick=()=>{F.limit+=200;drawTable()}}
+function headline(){const v=Object.entries(SC).filter(([t,s])=>PRESETS.value[1](S.rows.find(r=>r.ticker===t),s)).length;const red=Object.values(SC).filter(s=>s.flags.length).length;const hot=Object.values(SC).filter(s=>s.heat>=.8).length;return`${v} mã qua bộ lọc giá trị, ${red} mã có cờ đỏ, ${hot} mã đang nóng`}
+
+V.ma=t=>{const r=S.rows.find(x=>x.ticker===t);if(!r)return`<section class="band"><h1>Không tìm thấy mã ${esc(t)}</h1><a href="#loc">Về bộ lọc</a></section>`;const s=SC[t],m=SECM[r.sector||'Khác']||{};const peers=S.rows.filter(x=>(x.sector||'Khác')===(r.sector||'Khác')&&x.ticker!==t).sort((a,b)=>(SC[b.ticker].total||0)-(SC[a.ticker].total||0));const rank=[r,...peers].sort((a,b)=>(SC[b.ticker].total||0)-(SC[a.ticker].total||0)).indexOf(r)+1;
+  const cmp=['pe','pb','roe','roa','rev_g','np_g','gross_m','net_m','de','cfo_np','div_y','chg_1m','chg_1y','vol_ratio','foreign'].filter(k=>isFinite(N(r[k]))||isFinite(m[k]));const better={pe:-1,pb:-1,de:-1,roe:1,roa:1,rev_g:1,np_g:1,gross_m:1,net_m:1,cfo_np:1,div_y:1};
+  return`<section class="band" id="det"><p><a href="#loc">← Bộ lọc</a></p><div class="row" style="align-items:center"><div style="flex:3 1 300px"><h1 style="margin:0">${esc(r.ticker)} <span style="font-weight:400;font-size:.5em">${esc(r.name)}</span></h1><p class="mut">${esc(r.exchange)} · ${esc(r.sector)} · giá ${fmt(N(r.price))} nghìn đ · vốn hóa ${fmt(N(r.mcap),0)} tỷ đ</p></div><div style="flex:0 0 auto"><button id="star" class="${S.stars.includes(t)?'acc':''}">${S.stars.includes(t)?'★ Đang theo dõi':'☆ Theo dõi'}</button></div></div>
+  <div class="grid" style="margin-top:12px"><div class="card"><div class="mut">Điểm tổng hợp</div><div class="big">${isFinite(s.total)?Math.round(s.total*100):'—'}<span style="font-size:18px;color:var(--mut)">/100</span></div><p class="mut">Hạng ${rank}/${peers.length+1} trong ngành ${esc(r.sector)}</p>${[['Giá trị',s.value],['Chất lượng',s.quality],['Tăng trưởng',s.growth],['Độ nóng',s.heat]].map(([n,v])=>`<div class="pill"><span>${n}</span><div class="meter ${n==='Độ nóng'?(v>=.8?'r':''):(v>=.7?'g':v<.35?'r':'')}"><i style="width:${isFinite(v)?v*100:0}%"></i></div><b style="text-align:right">${isFinite(v)?Math.round(v*100):'—'}</b></div>`).join('')}<p class="mut">Độ nóng không tính vào điểm tổng — đây là tín hiệu cảnh báo tâm lý đám đông.</p></div>
+  <div class="card"><h2>Nhận định tự động</h2>${narrative(r,s,m).map(x=>`<div class="flag ${x[0]==='bad'?'bad':''}">${x[1]}</div>`).join('')}</div></div>
+  <div class="grid" style="margin-top:16px"><div class="card scroll"><h2>So với trung vị ngành</h2><table><thead><tr><th>Chỉ tiêu</th><th class="n">${esc(r.ticker)}</th><th class="n">Trung vị ngành</th><th class="n">Đánh giá</th></tr></thead><tbody>${cmp.map(k=>{const v=N(r[k]),mm=m[k];let ev='';if(better[k]&&isFinite(v)&&isFinite(mm)){const good=better[k]>0?v>mm:(v>0&&v<mm);ev=good?'<span class="tag g">Tốt hơn</span>':'<span class="tag">Kém hơn</span>'}return`<tr style="cursor:default"><td>${LAB[k]} <span class="mut">${UNIT[k]}</span></td><td class="n"><b>${fmt(v,k==='pb'||k==='de'||k==='cfo_np'?2:1)}</b></td><td class="n">${fmt(mm,k==='pb'||k==='de'||k==='cfo_np'?2:1)}</td><td class="n">${ev}</td></tr>`}).join('')}</tbody></table></div>
+  <div class="card"><h2>Cờ đỏ</h2>${s.flags.length?s.flags.map(f=>`<div class="flag bad">${esc(f[1])}</div>`).join(''):'<div class="flag">Không phát hiện cờ đỏ từ dữ liệu hiện có. Vẫn cần đọc thuyết minh BCTC.</div>'}<h2 style="margin-top:16px">Cùng ngành</h2><table><tbody>${peers.slice(0,8).map(p=>`<tr data-t="${esc(p.ticker)}"><td class="tk">${esc(p.ticker)}</td><td class="n">${isFinite(SC[p.ticker].total)?Math.round(SC[p.ticker].total*100):'—'}</td><td class="n">P/E ${fmt(N(p.pe))}</td><td class="n">ROE ${fmt(N(p.roe))}%</td></tr>`).join('')}</tbody></table></div></div>
+  <div class="grid" style="margin-top:16px"><div class="card aiBox"><h2>AI phân tích sâu</h2><p class="mut">AI đọc toàn bộ số liệu của mã và trung vị ngành, viết luận điểm ủng hộ, luận điểm phản biện và những gì cần kiểm chứng.</p><button class="acc" id="aiB" disabled>Đang kết nối AI…</button><div class="ai" id="aiOut">${esc(S.notes[t]?.ai||'')}</div></div>
+  <div class="card"><h2>Ghi chú của tôi</h2><textarea id="note" style="font-family:inherit;font-size:16px;min-height:180px" placeholder="Luận điểm, điều cần kiểm chứng, giá mục tiêu…">${esc(S.notes[t]?.text||'')}</textarea><p class="mut" id="noteSt"></p></div></div></section>`};
+function narrative(r,s,m){const o=[];const v=(k)=>N(r[k]);if(s.quality>=.7)o.push(['ok',`Chất lượng thuộc nhóm đầu ngành: ROE ${fmt(v('roe'))}% so với trung vị ${fmt(m.roe)}%.`]);else if(s.quality<.35)o.push(['bad',`Chất lượng kinh doanh yếu hơn phần lớn các mã cùng ngành (ROE ${fmt(v('roe'))}%).`]);
+  if(v('pe')>0&&isFinite(m.pe)){const d=v('pe')/m.pe-1;o.push([d<-.2?'ok':d>.3?'bad':'ok',`P/E ${fmt(v('pe'))} lần, ${d<0?'thấp':'cao'} hơn trung vị ngành ${fmt(Math.abs(d)*100,0)}%${d<-.2&&s.quality<.4?' — rẻ có thể do chất lượng kém, cẩn thận bẫy giá trị':d>.3&&s.growth>=.7?' — mức giá cao đang đi kèm tăng trưởng tốt':d>.3?' — định giá cao mà tăng trưởng không nổi bật':''}.`])}
+  if(isFinite(v('np_g'))&&isFinite(v('rev_g')))o.push([v('np_g')<0?'bad':'ok',`Doanh thu ${v('rev_g')>=0?'tăng':'giảm'} ${fmt(Math.abs(v('rev_g')),0)}%, lợi nhuận ${v('np_g')>=0?'tăng':'giảm'} ${fmt(Math.abs(v('np_g')),0)}%.`]);
+  if(s.heat>=.8)o.push(['bad','Giá và khối lượng tăng nóng hơn hầu hết thị trường. Tránh mua đuổi, viết luận điểm trước.']);else if(s.heat<=.2&&s.quality>=.5)o.push(['ok','Ít người quan tâm trong khi nền tảng ở mức khá — kiểu cơ hội đám đông thường bỏ qua.']);
+  if(N(r.div_y)>=5)o.push(['ok',`Tỷ suất cổ tức ${fmt(v('div_y'))}%${N(r.cfo_np)<0.8?', nhưng dòng tiền yếu — kiểm tra khả năng duy trì':''}.`]);return o}
+
+V.nganh=()=>{const rows=Object.entries(SECM).sort((a,b)=>b[1].n-a[1].n);return`<section class="band"><h1>Bức tranh theo ngành</h1><p class="mut">Trung vị các chỉ tiêu của từng ngành trong dữ liệu đã nạp. Bấm tên ngành để lọc.</p><div class="card scroll" style="padding:0"><table><thead><tr><th>Ngành</th><th class="n">Số mã</th><th class="n">P/E</th><th class="n">P/B</th><th class="n">ROE %</th><th class="n">Tăng DT %</th><th class="n">Tăng LN %</th><th class="n">Giá 1 tháng %</th><th class="n">Điểm TB</th></tr></thead><tbody>${rows.map(([s,m])=>{const t=avg(S.rows.filter(r=>(r.sector||'Khác')===s).map(r=>SC[r.ticker].total));return`<tr data-sec="${esc(s)}"><td class="tk">${esc(s)}</td><td class="n">${m.n}</td><td class="n">${fmt(m.pe)}</td><td class="n">${fmt(m.pb,2)}</td><td class="n">${fmt(m.roe)}</td><td class="n">${fmt(m.rev_g,0)}</td><td class="n">${fmt(m.np_g,0)}</td><td class="n" style="color:${m.chg_1m<0?'var(--acc)':'var(--up)'}">${fmt(m.chg_1m)}</td><td class="n">${isFinite(t)?Math.round(t*100):'—'}</td></tr>`}).join('')}</tbody></table></div></section>`};
+
+V['theo-doi']=()=>{const rows=S.rows.filter(r=>S.stars.includes(r.ticker));return`<section class="band"><h1>Danh sách theo dõi</h1>${rows.length?`<div class="card scroll" style="padding:0"><table><thead><tr><th>Mã</th><th>Ngành</th><th class="n">Giá</th><th class="n">Tổng</th><th class="n">Độ nóng</th><th>Cờ đỏ</th><th>Ghi chú</th></tr></thead><tbody>${rows.map(r=>{const s=SC[r.ticker];return`<tr data-t="${esc(r.ticker)}"><td class="tk">${esc(r.ticker)}</td><td>${esc(r.sector)}</td><td class="n">${fmt(N(r.price))}</td><td class="n"><b>${isFinite(s.total)?Math.round(s.total*100):'—'}</b></td><td class="n">${sc(s.heat,1)}</td><td>${s.flags.map(f=>`<span class="tag r">${esc(f[1])}</span>`).join(' ')}</td><td style="white-space:normal;max-width:360px">${esc((S.notes[r.ticker]?.text||'').slice(0,120))}</td></tr>`}).join('')}</tbody></table></div>`:'<p>Chưa theo dõi mã nào. Mở một mã trong <a href="#loc">Bộ lọc</a> và bấm “Theo dõi”.</p>'}</section>`};
+
+V.nap=()=>`<section class="band"><h1>Nạp dữ liệu toàn thị trường</h1><p>Trang không tự kết nối được tới sàn hay các website dữ liệu, nên số liệu được nạp từ tệp CSV. Cách nhanh nhất để có <b>tất cả các mã HOSE, HNX, UPCoM</b>: chạy script <code>lay_du_lieu.py</code> (đi kèm trang này) trên máy anh, rồi chọn tệp CSV nó tạo ra ở đây.</p>
+<div class="grid"><div class="card"><h2>Chọn tệp CSV</h2><input type="file" id="file" accept=".csv,text/csv"><p class="mut">Hoặc dán nội dung CSV (có dòng tiêu đề) vào ô dưới.</p><textarea id="csv" placeholder="ticker,name,exchange,sector,price,pe,pb,roe,…"></textarea><div class="row" style="margin-top:8px"><div><label for="srcIn">Nguồn dữ liệu</label><input id="srcIn" placeholder="VD: vnstock / VCI, ngày 20/11/2026"></div><div style="flex:0 0 auto"><button class="pri" id="load">Nạp và thay thế</button></div></div><p id="lmsg" role="status"></p></div>
+<div class="card"><h2>Các cột được nhận diện</h2><p class="mut">Chỉ cần cột <b>ticker</b>; càng nhiều cột thì điểm càng đầy đủ. Tiêu đề tiếng Việt cũng được nhận.</p><table><tbody>${COLS.map(c=>`<tr style="cursor:default"><td><code>${c[0]}</code></td><td>${c[1]}</td><td class="mut">${c[2]}</td></tr>`).join('')}</tbody></table><button id="tpl" style="margin-top:10px">Sao chép dòng tiêu đề mẫu</button><p class="mut" id="tmsg"></p></div></div></section>`;
+
+V['cach-tinh']=()=>`<section class="band" style="max-width:860px"><h1>Cách tính điểm</h1><p>Mỗi chỉ tiêu được quy đổi thành <b>phân vị trong ngành</b> (0 = kém nhất, 100 = tốt nhất trong các mã cùng ngành; ngành dưới 4 mã thì so với toàn thị trường). Như vậy ngân hàng chỉ so với ngân hàng, thép so với thép.</p><table><tbody><tr style="cursor:default"><td><b>Giá trị</b></td><td>P/E thấp (chỉ tính P/E dương), P/B thấp, tỷ suất cổ tức cao</td></tr><tr style="cursor:default"><td><b>Chất lượng</b></td><td>ROE, ROA, dòng tiền KD/lợi nhuận, biên ròng cao; nợ/vốn chủ thấp (bỏ qua với ngân hàng, bảo hiểm, chứng khoán)</td></tr><tr style="cursor:default"><td><b>Tăng trưởng</b></td><td>Tăng trưởng doanh thu và lợi nhuận</td></tr><tr style="cursor:default"><td><b>Độ nóng</b></td><td>Khối lượng so với trung bình 20 phiên, biến động giá 1 tháng — chỉ để cảnh báo, không tính vào tổng</td></tr><tr style="cursor:default"><td><b>Tổng</b></td><td>Giá trị 40% + Chất lượng 40% + Tăng trưởng 20%; doanh nghiệp đang lỗ bị nhân 0,7</td></tr></tbody></table><p class="mut">Điểm là so sánh tương đối, không phải định giá tuyệt đối. Một ngành đắt toàn bộ vẫn có mã “điểm giá trị cao”.</p></section>`;
+
+/* ---------- nạp CSV ---------- */
+function parseCSV(t){const rows=[];let row=[],f='',q=false;const d=(t.split('\n')[0].split(';').length>t.split('\n')[0].split(',').length)?';':',';for(let i=0;i<t.length;i++){const c=t[i];if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=c}else if(c==='"')q=true;else if(c===d){row.push(f);f=''}else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;row.push(f);rows.push(row);row=[];f=''}else f+=c}if(f!==''||row.length){row.push(f);rows.push(row)}return rows.filter(r=>r.some(x=>x.trim()!==''))}
+const norm=s=>String(s).trim().toLowerCase().normalize('NFC');
+function importCSV(text,src){const g=parseCSV(text.replace(/^\uFEFF/,''));if(g.length<2)throw new Error('Không có dữ liệu.');const head=g[0].map(norm);const map={};COLS.forEach(([k,,,al])=>{const i=head.findIndex(h=>al.includes(h)||h===k);if(i>=0)map[k]=i});if(map.ticker===undefined)throw new Error('Thiếu cột ticker (mã).');const out=[];const seen=new Set();g.slice(1).forEach(r=>{const t=String(r[map.ticker]||'').trim().toUpperCase();if(!t||seen.has(t))return;seen.add(t);const o={ticker:t};for(const k in map){if(k==='ticker')continue;const v=r[map[k]];o[k]=TXT.includes(k)?String(v||'').trim():N(v)}out.push(o)});if(!out.length)throw new Error('Không đọc được mã nào.');S.rows=out;S.demo=false;S.source=src||'Tệp CSV đã nạp';S.at=new Date().toISOString().slice(0,10);return{n:out.length,cols:Object.keys(map).length}}
+
+/* ---------- vẽ & điều hướng ---------- */
+function note(){$('#srcNote').innerHTML=S.demo?'Đang hiển thị <b>dữ liệu mẫu minh họa</b> (mã và số liệu giả định). Vào <a href="#nap">Nạp dữ liệu</a> để đưa số liệu thật của toàn thị trường vào.':`Nguồn: ${esc(S.source)}${S.at?' · nạp ngày '+esc(S.at):''} · ${S.rows.length.toLocaleString('vi-VN')} mã`}
+function aiReady(){const b=$('#aiB');if(!b)return;if(ai===false){document.querySelectorAll('.aiBox').forEach(x=>x.hidden=true);return}if(ai){b.disabled=false;b.textContent='Phân tích sâu mã này'}}
+function render(){let h=(location.hash||'#loc').slice(1);let view=h.startsWith('ma-')?'ma':(V[h]?h:'loc');document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+view));note();
+  if(view==='ma'){const t=decodeURIComponent(h.slice(3));$('#app').innerHTML=V.ma(t);const r=S.rows.find(x=>x.ticker===t);if(!r)return;
+    $('#star').onclick=()=>{S.stars=S.stars.includes(t)?S.stars.filter(x=>x!==t):[...S.stars,t];touch();render()};
+    let nt;$('#note').oninput=e=>{S.notes[t]={...(S.notes[t]||{}),text:e.target.value};clearTimeout(nt);$('#noteSt').textContent='đang lưu…';nt=setTimeout(()=>{touch();$('#noteSt').textContent='đã lưu'},500)};
+    $('#app').querySelectorAll('tr[data-t]').forEach(tr=>tr.onclick=()=>location.hash='ma-'+tr.dataset.t);
+    $('#aiB').onclick=async()=>{const b=$('#aiB'),o=$('#aiOut'),s=SC[t],m=SECM[r.sector||'Khác'];b.disabled=true;b.textContent='AI đang phân tích…';o.textContent='Đang suy nghĩ…';const data=COLS.filter(c=>!TXT.includes(c[0])).map(c=>`${c[1]} (${c[2]}): ${fmt(N(r[c[0]]),2)} | trung vị ngành ${fmt(m[c[0]],2)}`).join('\n');
+      try{const res=await ai(`Bạn là chuyên gia phân tích cổ phiếu Việt Nam, độc lập và hoài nghi, không chạy theo đám đông. Phân tích mã ${r.ticker} (${r.name}, sàn ${r.exchange}, ngành ${r.sector}) dựa CHỈ trên số liệu dưới đây. Viết tiếng Việt, văn bản thuần không markdown, gồm:\n1) Bức tranh tổng quan trong 3 câu.\n2) Luận điểm ủng hộ (tối đa 4 ý, mỗi ý dẫn số liệu).\n3) Luận điểm phản biện và rủi ro (tối đa 4 ý).\n4) Đánh giá định giá so với chất lượng và tăng trưởng: rẻ thật hay bẫy giá trị, đắt có xứng đáng không.\n5) 5 việc cần kiểm chứng trong BCTC, thuyết minh, nghị quyết ĐHCĐ trước khi ra quyết định.\nKhông bịa thông tin không có trong dữ liệu; không đưa khuyến nghị mua/bán.\n\nĐiểm (phân vị trong ngành, 0–100): giá trị ${Math.round(s.value*100)}, chất lượng ${Math.round(s.quality*100)}, tăng trưởng ${Math.round(s.growth*100)}, độ nóng ${Math.round(s.heat*100)}.\nCờ đỏ tự động: ${s.flags.map(f=>f[1]).join('; ')||'không'}\nSố liệu:\n${data}\nNguồn: ${S.source}`,{modelTier:'default',onText:({text})=>{o.textContent=text}});o.textContent=res.text;S.notes[t]={...(S.notes[t]||{}),ai:res.text};touch()}catch(e){o.textContent=e&&e.code==='rate_limited'?'AI đang quá tải, thử lại sau ít phút.':e&&e.code==='not_granted'?'Bạn chưa cấp quyền dùng AI cho trang này.':'Không gọi được AI.'}b.disabled=false;b.textContent='Phân tích lại'};aiReady();return}
+  $('#app').innerHTML=V[view]();
+  if(view==='loc'){drawTable();let qt;$('#q').oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>{F.q=e.target.value;F.limit=100;drawTable()},150)};$('#ex').onchange=e=>{F.ex=e.target.value;drawTable()};$('#sec').onchange=e=>{F.sec=e.target.value;drawTable()};document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{F.preset=b.dataset.p;document.querySelectorAll('[data-p]').forEach(x=>x.classList.toggle('on',x===b));drawTable()})}
+  if(view==='nganh')document.querySelectorAll('tr[data-sec]').forEach(tr=>tr.onclick=()=>{F.sec=tr.dataset.sec;F.preset='all';location.hash='loc'});
+  if(view==='theo-doi')document.querySelectorAll('tr[data-t]').forEach(tr=>tr.onclick=()=>location.hash='ma-'+tr.dataset.t);
+  if(view==='nap'){$('#file').onchange=async e=>{const f=e.target.files[0];if(f){$('#csv').value=await f.text();if(!$('#srcIn').value)$('#srcIn').value=f.name}};$('#load').onclick=()=>{try{const r=importCSV($('#csv').value,$('#srcIn').value.trim());compute();touch(true);$('#lmsg').innerHTML=`<b>Đã nạp ${r.n.toLocaleString('vi-VN')} mã</b>, nhận diện ${r.cols} cột. <a href="#loc">Xem bộ lọc →</a>`;note()}catch(err){$('#lmsg').innerHTML=`<span style="color:var(--acc)">${esc(err.message)}</span>`}};$('#tpl').onclick=async()=>{try{await navigator.clipboard.writeText(COLS.map(c=>c[0]).join(','));$('#tmsg').textContent='Đã sao chép.'}catch(_){$('#tmsg').textContent=COLS.map(c=>c[0]).join(',')}}}}
+window.addEventListener('hashchange',()=>{render();window.scrollTo(0,0)});
+compute();render();
+
+(async()=>{let done=false;const fb=()=>{if(done)return;done=true;try{const j=JSON.parse(localStorage.getItem('ptm')||'null');if(j&&j.rows){Object.assign(S,j);compute();render()}}catch(_){}};const tm=setTimeout(fb,10000);
+  try{const db=await claude.use('db'),u=await claude.use('user');if(db&&u){uidv=await u.id();DB=db;const col=db.collection('data/users/'+uidv);const meta=await dget(col.doc('meta'));clearTimeout(tm);done=true;if(meta&&meta.json){const m=JSON.parse(meta.json);let rows=[];for(let i=0;i<(m.chunks||0);i++){const c=await dget(col.doc('c'+i));if(c&&c.json)rows=rows.concat(JSON.parse(c.json))}Object.assign(S,{source:m.source,at:m.at,demo:m.demo,stars:m.stars||[],notes:m.notes||{}});if(rows.length)S.rows=rows;compute();render()}}else{clearTimeout(tm);fb()}}catch(e){clearTimeout(tm);DB=null;fb()}})();
+(async()=>{try{ai=(await claude.use('sample'))||false}catch(_){ai=false}aiReady()})();
+}
+</script>
+</body>
+</html>
